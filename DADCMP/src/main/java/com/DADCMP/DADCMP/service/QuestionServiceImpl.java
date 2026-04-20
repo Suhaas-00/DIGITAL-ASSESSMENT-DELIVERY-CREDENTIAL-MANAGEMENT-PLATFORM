@@ -50,4 +50,15 @@ public class QuestionServiceImpl implements QuestionService {
     public List<Question> getQuestionsByDifficulty(DifficultyLevel difficultyLevel) {
         return questionRepo.findByDifficultyLevel(difficultyLevel);
     }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public List<Question> bulkUploadQuestions(List<Question> questions) {
+        return questionRepo.saveAll(questions);
+    }
+
+    @Override
+    public List<Question> searchQuestions(String query, Long categoryId, DifficultyLevel difficulty) {
+        return questionRepo.searchQuestions(query, categoryId, difficulty);
+    }
 }

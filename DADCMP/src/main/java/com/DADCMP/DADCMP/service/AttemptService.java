@@ -16,4 +16,6 @@ public interface AttemptService {
     List<Attempt> getAttemptsByCandidate(Long candidateId); // ✅ FIXED
 
     List<Attempt> getAllAttempts();
+
+    Attempt autoEvaluateAttempt(Long attemptId);
 }

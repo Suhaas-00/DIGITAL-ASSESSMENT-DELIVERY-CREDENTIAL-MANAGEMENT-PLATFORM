@@ -12,7 +12,7 @@ import com.DADCMP.DADCMP.dto.LoginRequest;
 import com.DADCMP.DADCMP.dto.AuthResponse;
 
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping("/api/users")
 public class UserController {
     @Autowired
     private UserService userService;
@@ -23,7 +23,7 @@ public class UserController {
     }
 
     @PostMapping("/login")
-public AuthResponse login(@RequestBody LoginRequest request) {
-    return userService.loginUser(request);
-}
+    public AuthResponse login(@RequestBody LoginRequest request) {
+        return userService.loginUser(request);
+    }
 }

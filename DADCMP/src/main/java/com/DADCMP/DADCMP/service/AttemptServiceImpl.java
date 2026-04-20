@@ -1,5 +1,6 @@
 package com.DADCMP.DADCMP.service;
 
+import com.DADCMP.DADCMP.repository.QuestionRepo;
 import com.DADCMP.DADCMP.entity.Assessment;
 import com.DADCMP.DADCMP.entity.Attempt;
 import com.DADCMP.DADCMP.entity.User;
@@ -11,6 +12,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.DADCMP.DADCMP.entity.Question;
 
 @Service
 public class AttemptServiceImpl implements AttemptService {
@@ -23,6 +28,12 @@ public class AttemptServiceImpl implements AttemptService {
 
     @Autowired
     private AssessmentRepo assessmentRepo;
+
+    @Autowired
+    private com.DADCMP.DADCMP.repository.AttemptResponseRepo attemptResponseRepo;
+
+    @Autowired
+    private QuestionRepo questionRepo;
 
     @Autowired
     private CredentialService credentialService;
@@ -42,22 +53,74 @@ public class AttemptServiceImpl implements AttemptService {
         return attemptRepo.save(attempt);
     }
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @Override
+    @org.springframework.transaction.annotation.Transactional
     public Attempt submitAttempt(Long attemptId, String responses) {
         Attempt attempt = getAttemptById(attemptId);
         attempt.setResponses(responses);
         attempt.setEndTime(LocalDateTime.now());
         attempt.setStatus(AttemptStatus.SUBMITTED);
-        return attemptRepo.save(attempt);
+
+        try {
+            Map<Long, String> responseMap = objectMapper.readValue(responses, new TypeReference<Map<Long, String>>() {
+            });
+            List<Question> questions = attempt.getAssessment().getQuestions();
+
+            for (Question q : questions) {
+                String candidateAnswer = responseMap.get(q.getId());
+                com.DADCMP.DADCMP.entity.AttemptResponse resp = new com.DADCMP.DADCMP.entity.AttemptResponse();
+                resp.setAttempt(attempt);
+                resp.setQuestion(q);
+                resp.setSelectedOption(candidateAnswer);
+
+                if (candidateAnswer != null && candidateAnswer.trim().equalsIgnoreCase(q.getCorrectAnswer().trim())) {
+                    resp.setIsCorrect(true);
+                    resp.setMarksAwarded(q.getMarks());
+                } else {
+                    resp.setIsCorrect(false);
+                    resp.setMarksAwarded(0);
+                }
+                attemptResponseRepo.save(resp);
+            }
+        } catch (Exception e) {
+            System.err.println("Error parsing responses: " + e.getMessage());
+        }
+
+        Attempt saved = attemptRepo.save(attempt);
+        return autoEvaluateAttempt(saved.getId());
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public Attempt autoEvaluateAttempt(Long attemptId) {
+        Attempt attempt = getAttemptById(attemptId);
+        List<com.DADCMP.DADCMP.entity.AttemptResponse> responses = attemptResponseRepo.findAll().stream()
+                .filter(r -> r.getAttempt().getId().equals(attemptId))
+                .collect(java.util.stream.Collectors.toList());
+
+        int totalScore = responses.stream().mapToInt(r -> r.getMarksAwarded() != null ? r.getMarksAwarded() : 0).sum();
+        attempt.setScore(totalScore);
+        attempt.setStatus(AttemptStatus.EVALUATED);
+
+        Attempt saved = attemptRepo.save(attempt);
+
+        if (totalScore >= attempt.getAssessment().getPassingMarks()) {
+            credentialService.generateCredential(attempt.getCandidate().getId(), attempt.getAssessment().getId());
+        }
+
+        return saved;
     }
 
     @Override
     public Attempt evaluateAttempt(Long attemptId, Integer score) {
         Attempt attempt = getAttemptById(attemptId);
         attempt.setScore(score);
+        attempt.setStatus(AttemptStatus.EVALUATED);
         attemptRepo.save(attempt);
 
-        // Check if passing
         if (score >= attempt.getAssessment().getPassingMarks()) {
             credentialService.generateCredential(attempt.getCandidate().getId(), attempt.getAssessment().getId());
         }

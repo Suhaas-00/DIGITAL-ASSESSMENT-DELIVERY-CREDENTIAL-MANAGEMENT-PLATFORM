@@ -11,4 +11,7 @@ public interface AttemptRepo extends JpaRepository<Attempt, Long> {
     List<Attempt> findByStatus(AttemptStatus status);
 
     List<Attempt> findAll();
+
+    @org.springframework.data.jpa.repository.Query("SELECT a FROM Attempt a WHERE a.assessment.createdBy.id = :examinerId")
+    List<Attempt> findAttemptsByExaminerId(@org.springframework.data.repository.query.Param("examinerId") Long examinerId);
 }

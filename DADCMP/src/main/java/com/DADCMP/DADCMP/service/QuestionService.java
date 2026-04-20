@@ -11,4 +11,6 @@ public interface QuestionService {
     Question updateQuestion(Long id, Question question);
     void deleteQuestion(Long id);
     List<Question> getQuestionsByDifficulty(DifficultyLevel difficultyLevel);
+    List<Question> bulkUploadQuestions(List<Question> questions);
+    List<Question> searchQuestions(String query, Long categoryId, DifficultyLevel difficulty);
 }

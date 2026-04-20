@@ -41,4 +41,14 @@ public class Attempt {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private AttemptStatus status;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "evaluated_by")
+    private User evaluatedBy;
+
+    @Column(name = "remarks", columnDefinition = "TEXT")
+    private String remarks;
+
+    @Column(name = "evaluated_at")
+    private LocalDateTime evaluatedAt;
 }

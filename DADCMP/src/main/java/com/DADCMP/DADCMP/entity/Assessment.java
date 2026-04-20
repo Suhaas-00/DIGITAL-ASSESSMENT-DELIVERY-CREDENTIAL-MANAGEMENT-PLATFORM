@@ -3,6 +3,7 @@ package com.DADCMP.DADCMP.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.List;
 import java.time.LocalDateTime;
 
 import com.DADCMP.DADCMP.enums.AssessmentStatus;
@@ -43,4 +44,20 @@ public class Assessment {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private AssessmentStatus status = AssessmentStatus.SCHEDULED;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private Category category;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private User createdBy;
+
+    @ManyToMany
+    @JoinTable(
+        name = "assessment_questions",
+        joinColumns = @JoinColumn(name = "assessment_id"),
+        inverseJoinColumns = @JoinColumn(name = "question_id")
+    )
+    private List<Question> questions;
 }

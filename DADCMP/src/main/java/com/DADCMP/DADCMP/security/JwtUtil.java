@@ -1,11 +1,13 @@
 package com.DADCMP.DADCMP.security;
 
-import com.DADCMP.DADCMP.security.JwtUtil;
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.security.Keys;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import io.jsonwebtoken.security.Keys;
+
 import java.security.Key;
 import java.util.Base64;
 import java.util.Date;
@@ -16,73 +18,64 @@ public class JwtUtil {
     private final Key key;
     private final long expirationMs;
 
-    // Inject secret and expiration from application.properties
     public JwtUtil(
             @Value("${jwt.secret}") String secret,
             @Value("${jwt.expiration}") long expirationMs) {
 
-        // Decode the Base64-encoded secret and build the signing key
         byte[] keyBytes = secret.getBytes();
+
+        if (keyBytes.length < 32) {
+            throw new RuntimeException("JWT secret key must be at least 32 bytes long. Current length: " + keyBytes.length);
+        }
+
         this.key = Keys.hmacShaKeyFor(keyBytes);
         this.expirationMs = expirationMs;
     }
 
-    /**
-     * Generate a signed JWT token for the given username.
-     */
-    public String generateToken(String username) {
+    // ✅ FIXED HERE
+    public String generateToken(String username, String role) {
         return Jwts.builder()
                 .setSubject(username)
+                .claim("role", role)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
-                .signWith(key) // Explicit algorithm
+                .signWith(key) // ✅ CORRECT for jjwt 0.12+
                 .compact();
     }
 
-    /**
-     * Extract the username (subject) from a JWT token.
-     * Returns null if the token is invalid or expired.
-     */
-    public String extractUsername(String token) {
+    private Claims extractClaims(String token) {
         try {
             return Jwts.parserBuilder()
                     .setSigningKey(key)
                     .build()
                     .parseClaimsJws(token)
-                    .getBody()
-                    .getSubject();
+                    .getBody();
         } catch (JwtException | IllegalArgumentException e) {
-            // Covers: ExpiredJwtException, MalformedJwtException,
-            // SignatureException, UnsupportedJwtException
+            System.err.println("Invalid JWT: " + e.getMessage());
             return null;
         }
     }
 
-    /**
-     * Validate that the token belongs to the given username and is not expired.
-     */
+    public String extractUsername(String token) {
+        Claims claims = extractClaims(token);
+        return claims != null ? claims.getSubject() : null;
+    }
+
+    public String extractRole(String token) {
+        Claims claims = extractClaims(token);
+        return claims != null ? claims.get("role", String.class) : null;
+    }
+
     public boolean validateToken(String token, String username) {
         String extractedUsername = extractUsername(token);
-        // extractUsername returns null on any error (expired, malformed, etc.)
+
         return extractedUsername != null
                 && extractedUsername.equals(username)
                 && !isTokenExpired(token);
     }
 
-    /**
-     * Check whether the token's expiration date is in the past.
-     */
     private boolean isTokenExpired(String token) {
-        try {
-            Date expiration = Jwts.parserBuilder()
-                    .setSigningKey(key)
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody()
-                    .getExpiration();
-            return expiration.before(new Date());
-        } catch (JwtException | IllegalArgumentException e) {
-            return true; // Treat unparseable tokens as expired
-        }
+        Claims claims = extractClaims(token);
+        return claims == null || claims.getExpiration().before(new Date());
     }
 }

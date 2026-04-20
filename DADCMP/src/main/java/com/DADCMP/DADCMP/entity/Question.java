@@ -6,6 +6,8 @@ import com.DADCMP.DADCMP.enums.QuestionType;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.Set;
+
 @Data
 @Entity
 @Table(name = "questions")
@@ -34,4 +36,26 @@ public class Question {
 
     @Column(name = "correct_answer")
     private String correctAnswer;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private Category category;
+
+    @ManyToMany
+    @JoinTable(
+        name = "question_tags",
+        joinColumns = @JoinColumn(name = "question_id"),
+        inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private Set<Tag> tags;
+
+    @Column(name = "version")
+    private Integer version = 1;
+
+    @Column(name = "is_active")
+    private Boolean isActive = true;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "examiner_id")
+    private User examiner;
 }
