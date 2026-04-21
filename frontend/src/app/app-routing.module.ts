@@ -10,6 +10,8 @@ import { AdminDashboardComponent } from './modules/admin/dashboard/dashboard.com
 import { AssessmentListComponent } from './modules/admin/assessments/assessment-list.component';
 import { QuestionListComponent } from './modules/admin/questions/question-list.component';
 import { ReportComponent } from './modules/admin/reports/report.component';
+import { UserManagerComponent } from './modules/admin/users/user-manager.component';
+import { ExaminerManagerComponent } from './modules/admin/examiners/examiner-manager.component';
 
 // Candidate Components
 import { CandidateDashboardComponent } from './modules/candidate/dashboard/dashboard.component';
@@ -24,8 +26,10 @@ import { AssessmentBuilderComponent } from './modules/examiner/assessments/asses
 
 // Public Components
 import { VerifyComponent } from './modules/public/verify/verify.component';
+import { LandingComponent } from './modules/public/landing/landing.component';
 
 const routes: Routes = [
+  { path: '', component: LandingComponent },
   { path: 'auth/login', component: LoginComponent },
   { path: 'auth/register', component: RegisterComponent },
   { path: 'verify', component: VerifyComponent },
@@ -39,12 +43,14 @@ const routes: Routes = [
       {
         path: 'admin',
         canActivate: [RoleGuard],
-        data: { expectedRoles: ['ADMIN'] },
+        data: { expectedRoles: ['ADMINISTRATOR'] },
         children: [
           { path: '', component: AdminDashboardComponent },
           { path: 'assessments', component: AssessmentListComponent },
           { path: 'questions', component: QuestionListComponent },
-          { path: 'reports', component: ReportComponent }
+          { path: 'reports', component: ReportComponent },
+          { path: 'users', component: UserManagerComponent },
+          { path: 'examiners', component: ExaminerManagerComponent }
         ]
       },
       // Examiner Routes

@@ -21,6 +21,8 @@ import { AdminDashboardComponent } from './modules/admin/dashboard/dashboard.com
 import { AssessmentListComponent } from './modules/admin/assessments/assessment-list.component';
 import { QuestionListComponent } from './modules/admin/questions/question-list.component';
 import { ReportComponent } from './modules/admin/reports/report.component';
+import { UserManagerComponent } from './modules/admin/users/user-manager.component';
+import { ExaminerManagerComponent } from './modules/admin/examiners/examiner-manager.component';
 
 // Candidate Components
 import { CandidateDashboardComponent } from './modules/candidate/dashboard/dashboard.component';
@@ -35,6 +37,7 @@ import { AssessmentBuilderComponent } from './modules/examiner/assessments/asses
 
 // Public Components
 import { VerifyComponent } from './modules/public/verify/verify.component';
+import { LandingComponent } from './modules/public/landing/landing.component';
 
 @NgModule({
   declarations: [
@@ -48,6 +51,8 @@ import { VerifyComponent } from './modules/public/verify/verify.component';
     AssessmentListComponent,
     QuestionListComponent,
     ReportComponent,
+    UserManagerComponent,
+    ExaminerManagerComponent,
     CandidateDashboardComponent,
     ExamComponent,
     CandidateResultsComponent,
@@ -55,7 +60,8 @@ import { VerifyComponent } from './modules/public/verify/verify.component';
     AttemptListComponent,
     QuestionManagerComponent,
     AssessmentBuilderComponent,
-    VerifyComponent
+    VerifyComponent,
+    LandingComponent
   ],
   imports: [
     BrowserModule,
@@ -69,4 +75,5 @@ import { VerifyComponent } from './modules/public/verify/verify.component';
   ],
   bootstrap: [AppComponent]
 })
-export class AppModule { }
+export class AppModule {
+}

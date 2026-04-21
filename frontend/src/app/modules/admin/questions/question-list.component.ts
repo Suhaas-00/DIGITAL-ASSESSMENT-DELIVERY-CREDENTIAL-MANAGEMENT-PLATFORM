@@ -10,14 +10,20 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="fw-bold m-0">Question Repository</h2>
         <div class="d-flex gap-2">
-          <button class="btn btn-outline-dark px-4 rounded-pill fw-bold shadow-sm" (click)="triggerBulkUpload()">
+          <!-- Added template download button -->
+          <button class="btn btn-outline-primary px-3 rounded-pill fw-bold shadow-sm" (click)="downloadTemplate()">
+            <i class="bi bi-download me-2"></i> Download Template
+          </button>
+          
+          <button class="btn btn-outline-dark px-3 rounded-pill fw-bold shadow-sm" (click)="triggerBulkUpload()">
             <i class="bi bi-file-earmark-arrow-up me-2"></i> Bulk Upload
           </button>
-          <button class="btn btn-dark px-4 rounded-pill fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addQuestionModal">
+          
+          <button class="btn btn-dark px-3 rounded-pill fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addQuestionModal">
             <i class="bi bi-plus-lg me-2"></i> Create Question
           </button>
         </div>
-        <input type="file" id="bulkUploadInput" style="display: none" (change)="onFileSelected($event)">
+        <input type="file" id="bulkUploadInput" style="display: none" accept=".json" (change)="onFileSelected($event)">
       </div>
 
       <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
@@ -36,7 +42,9 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
               <tbody>
                 <tr *ngFor="let item of questions">
                   <td class="ps-4">
-                    <div class="text-truncate" style="max-width: 400px;">{{item.questionText}}</div>
+                    <div class="text-truncate" style="max-width: 400px;" [title]="item.questionText || item.question_text || ''">
+                      {{item.questionText || item.question_text || '(Extraction format mismatch)'}}
+                    </div>
                   </td>
                   <td><span class="badge bg-light text-dark border">{{item.questionType}}</span></td>
                   <td>
@@ -146,14 +154,39 @@ export class QuestionListComponent implements OnInit {
   }
 
   refresh() {
-    this.adminService.getQuestions().subscribe(data => this.questions = data);
+    this.adminService.getQuestions().subscribe((data: Question[]) => this.questions = data);
   }
 
   onSubmit() {
     if (this.questionForm.invalid) return;
-    this.adminService.addQuestion(this.questionForm.value).subscribe(() => {
-      this.refresh();
-      this.questionForm.reset({ questionType: 'MCQ', difficultyLevel: 'EASY', marks: 1 });
+
+    // Safety: Format Options to highly valid JSON String array
+    let formPayload = { ...this.questionForm.value };
+    if (typeof formPayload.options === 'string') {
+        const optionArray = formPayload.options.split(',').map((o: string) => o.trim()).filter((o: string) => o.length > 0);
+        formPayload.options = JSON.stringify(optionArray);
+    }
+    
+    // Convert tags same way if requested
+    if (typeof formPayload.tags === 'string' && formPayload.tags) {
+       // Since the DB uses Tag entity, we may need to make it simple or omit, but for now passing string
+       formPayload.tags = []; // Backend may handle string arrays or object array mapping
+    } else {
+       formPayload.tags = [];
+    }
+
+    this.adminService.addQuestion(formPayload).subscribe({
+       next: () => {
+         this.refresh();
+         this.questionForm.reset({ questionType: 'MCQ', difficultyLevel: 'EASY', marks: 1 });
+         // Close the modal automatically
+         const modalCloseBtn = document.querySelector('#addQuestionModal .btn-close') as HTMLElement;
+         if (modalCloseBtn) modalCloseBtn.click();
+       },
+       error: (err) => {
+         console.error('Failed to create question', err);
+         alert('Failed to save question. Check server logs.');
+       }
     });
   }
 
@@ -161,6 +194,33 @@ export class QuestionListComponent implements OnInit {
     if (confirm('Permanently delete this question from the repository?')) {
       this.adminService.deleteQuestion(id).subscribe(() => this.refresh());
     }
+  }
+
+  downloadTemplate() {
+    const templateObject = [
+      {
+        "questionText": "What is the capital of France?",
+        "questionType": "MCQ",
+        "difficultyLevel": "EASY",
+        "marks": 5,
+        "options": "[\"London\", \"Paris\", \"Berlin\", \"Madrid\"]",
+        "correctAnswer": "Paris"
+      },
+      {
+        "questionText": "Is Java an object-oriented language?",
+        "questionType": "TRUE_FALSE",
+        "difficultyLevel": "EASY",
+        "marks": 2,
+        "options": "[\"True\", \"False\"]",
+        "correctAnswer": "True"
+      }
+    ];
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(templateObject, null, 2));
+    const dt = document.createElement('a');
+    dt.setAttribute("href", dataStr);
+    dt.setAttribute("download", "questions_bulk_template.json");
+    dt.click();
   }
 
   triggerBulkUpload() {
@@ -174,9 +234,20 @@ export class QuestionListComponent implements OnInit {
       reader.onload = (e: any) => {
         try {
           const questions = JSON.parse(e.target.result);
-          this.adminService.bulkUploadQuestions(questions).subscribe(() => {
-            alert('Bulk upload successful!');
-            this.refresh();
+          if (!Array.isArray(questions)) {
+            alert('File must contain an array of question objects.');
+            return;
+          }
+          this.adminService.bulkUploadQuestions(questions).subscribe({
+            next: () => {
+              alert('Bulk upload successful!');
+              this.refresh();
+              event.target.value = ''; // Reset input
+            },
+            error: (err) => {
+              console.error('Bulk upload failed', err);
+              alert('Failed to process bulk upload. Please check the file format matches the template.');
+            }
           });
         } catch (err) {
           alert('Invalid JSON file format.');

@@ -67,18 +67,18 @@ import { Attempt } from 'src/app/models/app.models';
                 </div>
               </div>
 
-              <div class="d-flex gap-2">
-
-                <button class="btn btn-outline-dark flex-grow-1 py-2 rounded-pill fw-bold small">
+              <div class="d-flex flex-column gap-2">
+                <button class="btn btn-outline-dark w-100 py-2 rounded-pill fw-bold small">
                   VIEW FEEDBACK
                 </button>
-
-                <button *ngIf="isPassed(res)"
-                        class="btn btn-dark flex-grow-1 py-2 rounded-pill fw-bold small"
-                        routerLink="/public/verify">
-                  VERIFY
-                </button>
-
+                <!-- CREDENTIAL DISPLAY -->
+                <div *ngIf="isPassed(res) && getCredentialCode(res.assessment.id)" class="mt-2 text-center">
+                    <span class="d-block small text-muted uppercase fw-bold mb-1">Credential Code Generated</span>
+                    <div class="input-group">
+                       <input type="text" readonly class="form-control form-control-sm text-center fw-bold font-monospace bg-light border-0" [value]="getCredentialCode(res.assessment.id)">
+                       <button class="btn btn-primary btn-sm fw-bold px-3" [routerLink]="['/verify']" [queryParams]="{code: getCredentialCode(res.assessment.id)}">Verify</button>
+                    </div>
+                </div>
               </div>
 
             </div>
@@ -97,7 +97,8 @@ import { Attempt } from 'src/app/models/app.models';
     .results-page { background: #f8fbff; min-height: 100vh; }
     .bg-success-soft { background: #ecfdf5; }
     .bg-danger-soft { background: #fef2f2; }
-    .result-card:hover { transform: translateY(-5px); }
+    .result-card { transition: transform 0.2s; }
+    .result-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
     .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     .uppercase { text-transform: uppercase; font-size: 0.7rem; }
   `]
@@ -105,6 +106,7 @@ import { Attempt } from 'src/app/models/app.models';
 export class CandidateResultsComponent implements OnInit {
 
    results: Attempt[] = [];
+   credentials: any[] = [];
 
    constructor(private candidateService: CandidateService) { }
 
@@ -113,20 +115,19 @@ export class CandidateResultsComponent implements OnInit {
    }
 
    loadResults() {
-      this.candidateService.getResults().subscribe({
-         next: (data) => {
-            console.log("📊 Results:", data);
-            this.results = data;
-         },
-         error: (err) => {
-            console.error("❌ Error loading results:", err);
-         }
-      });
+      this.candidateService.getResults().subscribe(data => this.results = data);
+      this.candidateService.getCredentials().subscribe(data => this.credentials = data);
    }
 
-   // ✅ SAFE PASS CHECK
+   // ✅ STRICT PASS CHECK (Enforces 50% Threshold)
    isPassed(attempt: Attempt): boolean {
-      return (attempt.score || 0) >= (attempt.assessment?.passingMarks || 0);
+      const score = attempt.score || 0;
+      const total = attempt.assessment?.totalMarks || 1;
+      const passing = attempt.assessment?.passingMarks || Math.ceil(total * 0.5);
+      
+      // Secondary safety check: ensure the score is at least 50% of total marks
+      const fiftyPercent = Math.ceil(total * 0.5);
+      return score >= Math.max(passing, fiftyPercent);
    }
 
    // ✅ SAFE PROGRESS CALCULATION
@@ -134,5 +135,12 @@ export class CandidateResultsComponent implements OnInit {
       const score = attempt.score || 0;
       const total = attempt.assessment?.totalMarks || 1;
       return ((score / total) * 100) + '%';
+   }
+
+   // ✅ MAP CREDENTIAL CODE
+   getCredentialCode(assessmentId: number | undefined): string | null {
+      if (!assessmentId) return null;
+      const cred = this.credentials.find(c => c.assessment?.id === assessmentId);
+      return cred ? cred.credentialCode : null;
    }
 }

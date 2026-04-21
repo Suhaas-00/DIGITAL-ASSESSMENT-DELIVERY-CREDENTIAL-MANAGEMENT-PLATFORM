@@ -28,6 +28,7 @@ import { Credential } from 'src/app/models/app.models';
                 <th>Issue Date</th>
                 <th>Verification Code</th>
                 <th>Status</th>
+                <th class="text-end">Actions</th>
               </tr>
             </thead>
 
@@ -61,6 +62,15 @@ import { Credential } from 'src/app/models/app.models';
                   </span>
                 </td>
 
+                <td class="text-end">
+                  <button class="btn btn-sm btn-outline-danger" 
+                          *ngIf="item.status !== 'REVOKED'"
+                          (click)="revoke(item.id!)">
+                    <span class="bi bi-x-circle me-1"></span> Revoke
+                  </button>
+                  <span class="text-muted small" *ngIf="item.status === 'REVOKED'">Revoked</span>
+                </td>
+
               </tr>
 
               <!-- EMPTY STATE -->
@@ -92,15 +102,23 @@ export class ReportComponent implements OnInit {
     this.loading = true;
 
     this.adminService.getReports().subscribe({
-      next: (data) => {
+      next: (data: Credential[]) => {
         console.log("📊 Reports:", data);
         this.reports = data;
         this.loading = false;
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error("❌ Error loading reports:", err);
         this.loading = false;
       }
     });
+  }
+
+  revoke(id: number) {
+    if(confirm("Are you sure you want to revoke this credential permanently?")) {
+       this.adminService.revokeCredential(id).subscribe(() => {
+          this.loadReports();
+       });
+    }
   }
 }

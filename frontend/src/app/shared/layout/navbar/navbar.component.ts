@@ -4,19 +4,36 @@ import { AuthService } from 'src/app/core/services/auth.service';
 @Component({
   selector: 'app-navbar',
   template: `
-    <header class="navbar navbar-dark sticky-top bg-primary flex-md-nowrap p-0 shadow">
-      <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-5 fw-bold" href="#">DADCMP</a>
-      <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="navbar-nav w-100 d-flex flex-row justify-content-end px-3">
-        <div class="nav-item text-nowrap d-flex align-items-center">
-          <span class="text-white me-3 d-none d-sm-inline">Welcome, <strong>{{username}}</strong> ({{role}})</span>
-          <button class="btn btn-outline-light btn-sm" (click)="logout()">Sign out</button>
+    <header class="navbar navbar-light sticky-top px-4 py-2">
+      <div class="container-fluid">
+        <a class="navbar-brand d-flex align-items-center" routerLink="/">
+          <div class="logo-box bg-primary text-white me-2 rounded-2 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+            <i class="bi bi-cpu small"></i>
+          </div>
+          <span class="brand-text fs-5">AssessiMate</span>
+        </a>
+        
+        <div class="d-flex align-items-center gap-3">
+          <div class="d-none d-md-flex align-items-center">
+            <div class="d-flex flex-column text-end me-3">
+              <span class="small fw-medium text-dark">{{username}}</span>
+              <span class="text-muted" style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">{{role}}</span>
+            </div>
+            <div class="user-avatar bg-light border d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; border-radius: 50%;">
+               <i class="bi bi-person text-muted"></i>
+            </div>
+          </div>
+          
+          <button class="btn btn-link text-muted p-1" (click)="logout()" title="Sign out">
+            <i class="bi bi-box-arrow-right fs-5"></i>
+          </button>
         </div>
       </div>
     </header>
-  `
+  `,
+  styles: [`
+    .navbar { background: var(--white) !important; border-bottom: 1px solid var(--border-color) !important; height: 64px; }
+  `]
 })
 export class NavbarComponent implements OnInit {
   username: string = '';

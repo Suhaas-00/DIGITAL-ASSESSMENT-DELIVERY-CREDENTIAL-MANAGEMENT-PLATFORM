@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ExaminerService, AdminService } from 'src/app/core/services/api.service';
+import { ExaminerService } from 'src/app/core/services/api.service';
 import { AuthService } from 'src/app/core/services/auth.service';
 
 @Component({
@@ -137,7 +137,6 @@ export class QuestionManagerComponent implements OnInit {
 
   constructor(
     private examinerService: ExaminerService,
-    private adminService: AdminService,
     private authService: AuthService
   ) {}
 
@@ -169,7 +168,7 @@ export class QuestionManagerComponent implements OnInit {
       examiner: user ? { id: user.id } : null
     };
 
-    this.adminService.addQuestion(payload).subscribe({
+    this.examinerService.createQuestion(payload).subscribe({
       next: () => {
         this.successMsg = 'Question added successfully!';
         this.showForm = false;

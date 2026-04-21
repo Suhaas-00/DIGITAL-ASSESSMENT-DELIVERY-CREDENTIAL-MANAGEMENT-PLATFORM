@@ -26,12 +26,14 @@ export interface Assessment {
   endDateTime: string;
   status: 'SCHEDULED' | 'ACTIVE' | 'COMPLETED';
   questions?: Question[];
+  assignedCandidates?: User[];
   createdBy?: { id: number; username: string };
 }
 
 export interface Question {
   id?: number;
-  questionText: string;
+  questionText?: string;
+  question_text?: string;
   questionType: 'MCQ' | 'TRUE_FALSE';
   difficultyLevel: 'EASY' | 'MEDIUM' | 'HARD';
   marks: number;
